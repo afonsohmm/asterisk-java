@@ -77,6 +77,9 @@ public class OriginateAction extends AbstractManagerAction implements EventGener
     private String codecs;
     private Boolean earlyMedia;
 
+    private String channelId;
+    private String otherChannelId;
+
     // starting at ten saves on a formatter.
     private int headerCounter = 10;
     private Set<String> preventDuplicateSipHeaders = new HashSet<>();
@@ -484,14 +487,16 @@ public class OriginateAction extends AbstractManagerAction implements EventGener
     /**
      * @param earlyMedia the earlyMedia to set
      */
-    public void setEarlyMedia(Boolean earlyMedia) {
+    public void setEarlyMedia(Boolean earlyMedia)
+    {
         this.earlyMedia = earlyMedia;
     }
 
     /**
      * @return the earlyMedia
      */
-    public Boolean getEarlyMedia() {
+    public Boolean getEarlyMedia()
+    {
         return earlyMedia;
     }
 
@@ -564,6 +569,54 @@ public class OriginateAction extends AbstractManagerAction implements EventGener
         {
             logger.error("Already added the sip header " + header);
         }
+    }
+
+    public void addPjSipHeader(VariableInheritance inheritance, String header)
+    {
+        if (header != null)
+        {
+            String[] parts = header.split(":");
+            if (parts.length == 2)
+            {
+                String varName = "PJSIP_HEADER" + "(add," + parts[0] + ")";
+                String varValue = parts[1];
+
+                if (!preventDuplicateSipHeaders.contains(header))
+                {
+                    setVariable(varName, varValue);
+                    preventDuplicateSipHeaders.add(header);
+                }
+                else
+                {
+                    logger.error("Already added the sip header " + header);
+                }
+            }
+        }
+    }
+
+    /**
+     * this will be the channels uniqueID
+     * 
+     * @param channelId
+     */
+    public void setChannelId(String channelId)
+    {
+        this.channelId = channelId;
+    }
+
+    public String getChannelId()
+    {
+        return channelId;
+    }
+
+    public void setOtherChannelId(String otherChannelId)
+    {
+        this.otherChannelId = otherChannelId;
+    }
+
+    public String getOtherChannelId()
+    {
+        return otherChannelId;
     }
 
 }

@@ -96,22 +96,13 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
             this.bridgeSupport = CoherentManagerConnection.getInstance().isBridgeSupported();
             expectRenameEvents = CoherentManagerConnection.getInstance().expectRenameEvents();
             liveChannels = new LiveChannelManager();
-            try
-            {
-                MeetmeRoomControl.init(this, AsteriskPBX.MAX_MEETME_ROOMS);
-            }
-            catch (Throwable e)
-            {
-                logger.error(e, e);
-            }
 
+            MeetmeRoomControl.init(this, AsteriskPBX.MAX_MEETME_ROOMS);
         }
-        catch (IllegalStateException | IOException | AuthenticationFailedException | TimeoutException
-                | InterruptedException e1)
+        catch (Exception e)
         {
-            logger.error(e1, e1);
+            throw new RuntimeException(e);
         }
-
     }
 
     @Override
@@ -169,7 +160,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
 
     /**
      * Utility method to bridge two channels
-     * 
+     *
      * @param lhsChannel
      * @param rhsChannel
      * @param direction
@@ -521,7 +512,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
 
     /**
      * Convenience method to build a call id from an event.
-     * 
+     *
      * @param event
      */
     public CallerID buildCallerID(final AbstractChannelEvent event)
@@ -569,7 +560,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
      * <br>
      * Use registerChannel instead calling this method with an incorrect or
      * stale uniqueId will cause inconsistent behaviour.
-     * 
+     *
      * @param channelName
      * @param uniqueID
      * @return
@@ -596,7 +587,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
 
     /**
      * remove white space
-     * 
+     *
      * @param name
      * @return
      */
@@ -653,7 +644,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
 
     /**
      * sends an action with a default timeout of 30 seconds.
-     * 
+     *
      * @param theAction
      * @return
      * @throws IllegalArgumentException
@@ -750,7 +741,7 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
     /**
      * Waits for a channel to become quiescent. A Quiescent channel is one that
      * is not in the middle of a name change (e.g. masquerade)
-     * 
+     *
      * @param channel
      * @param timeout the time to wait (in milliseconds) for the channel to
      *            become quiescent.
@@ -905,22 +896,18 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
         return dialer;
     }
 
-    public DialToAgiWithAbortCallback dialToAgiWithAbort(EndPoint endPoint, CallerID callerID, int timeout,
+    public DialToAgiActivityImpl dialToAgiWithAbort(EndPoint endPoint, CallerID callerID, int timeout,
             AgiChannelActivityAction action, ActivityCallback<DialToAgiActivity> iCallback)
     {
 
-        final CompletionAdaptor<DialToAgiActivity> completion = new CompletionAdaptor<>();
+        return new DialToAgiActivityImpl(endPoint, callerID, timeout, false, iCallback, null, action);
 
-        final DialToAgiActivityImpl dialer = new DialToAgiActivityImpl(endPoint, callerID, timeout, false, completion, null,
-                action);
-
-        return new DialToAgiWithAbortCallback(dialer, completion, iCallback);
     }
 
     /**
      * Creates the set of extensions required to test NJR during the
      * installation. The context must already exist in the dialplan.
-     * 
+     *
      * @param profile
      * @param dialContext
      * @return success or failure
@@ -961,34 +948,27 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
 
     }
 
+	public boolean checkDialplanExists(String dialPlan, String context) throws IOException, TimeoutException {
+		String command;
+
+		if (getVersion().isAtLeast(AsteriskVersion.ASTERISK_1_6)) {
+			// TODO: Use ShowDialplanAction instead of CommandAction?
+			command = "dialplan show " + context;
+		}
+		else
+		{
+			command = "show dialplan " + context;
+		}
+
+		CommandAction action = new CommandAction(command);
+		CommandResponse response = (CommandResponse) sendAction(action, 30000);
+
+		return response.getResult().stream().anyMatch(line -> line.contains(dialPlan));
+	}
+
     public boolean checkDialplanExists(AsteriskSettings profile)
-            throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException
-    {
-        String command;
-
-        if (getVersion().isAtLeast(AsteriskVersion.ASTERISK_1_6))
-        {
-            // TODO: Use ShowDialplanAction instead of CommandAction?
-            command = "dialplan show " + profile.getManagementContext();
-        }
-        else
-        {
-            command = "show dialplan " + profile.getManagementContext();
-        }
-
-        CommandAction action = new CommandAction(command);
-        CommandResponse response = (CommandResponse) sendAction(action, 30000);
-
-        boolean exists = false;
-        for (String line : response.getResult())
-        {
-            if (line.contains(ACTIVITY_AGI))
-            {
-                exists = true;
-                break;
-            }
-        }
-        return exists;
+            throws IllegalArgumentException, IllegalStateException, IOException, TimeoutException {
+        return checkDialplanExists(ACTIVITY_AGI, profile.getManagementContext());
 
     }
 
@@ -1001,10 +981,11 @@ public enum AsteriskPBX implements PBX, ChannelHangupListener
         CommandResponse response = (CommandResponse) sendAction(action, 30000);
 
         List<String> line = response.getResult();
-        String answer = line.get(0);
         String tmp = "Extension '" + extNumber + "," + priority + ",";
-        if (answer.substring(0, tmp.length()).compareToIgnoreCase(tmp) == 0)
-            return "OK";
+
+        if (line.stream().anyMatch(answer -> answer.substring(0, tmp.length()).compareToIgnoreCase(tmp) == 0)) {
+	        return "OK";
+        }
 
         throw new Exception("InitiateAction.AddExtentionFailed" + ext);
     }

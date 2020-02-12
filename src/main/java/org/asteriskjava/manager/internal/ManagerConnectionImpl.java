@@ -49,7 +49,14 @@ import org.asteriskjava.manager.ManagerEventListener;
 import org.asteriskjava.manager.ResponseEvents;
 import org.asteriskjava.manager.SendActionCallback;
 import org.asteriskjava.manager.TimeoutException;
-import org.asteriskjava.manager.action.*;
+import org.asteriskjava.manager.action.ChallengeAction;
+import org.asteriskjava.manager.action.CommandAction;
+import org.asteriskjava.manager.action.CoreSettingsAction;
+import org.asteriskjava.manager.action.EventGeneratingAction;
+import org.asteriskjava.manager.action.LoginAction;
+import org.asteriskjava.manager.action.LogoffAction;
+import org.asteriskjava.manager.action.ManagerAction;
+import org.asteriskjava.manager.action.UserEventAction;
 import org.asteriskjava.manager.event.ConnectEvent;
 import org.asteriskjava.manager.event.DialBeginEvent;
 import org.asteriskjava.manager.event.DialEvent;
@@ -57,7 +64,11 @@ import org.asteriskjava.manager.event.DisconnectEvent;
 import org.asteriskjava.manager.event.ManagerEvent;
 import org.asteriskjava.manager.event.ProtocolIdentifierReceivedEvent;
 import org.asteriskjava.manager.event.ResponseEvent;
-import org.asteriskjava.manager.response.*;
+import org.asteriskjava.manager.response.ChallengeResponse;
+import org.asteriskjava.manager.response.CommandResponse;
+import org.asteriskjava.manager.response.CoreSettingsResponse;
+import org.asteriskjava.manager.response.ManagerError;
+import org.asteriskjava.manager.response.ManagerResponse;
 import org.asteriskjava.util.DateUtil;
 import org.asteriskjava.util.Log;
 import org.asteriskjava.util.LogFactory;
@@ -80,6 +91,19 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
     private static final int RECONNECTION_VERSION_INTERVAL = 500;
     private static final int MAX_VERSION_ATTEMPTS = 4;
     private static final String CMD_SHOW_VERSION = "core show version";
+
+    // NOTE: identifier is AMI_VERSION, defined in include/asterisk/manager.h
+    // AMI version consists of MAJOR.BREAKING.NON-BREAKING.
+    private static final String[] SUPPORTED_AMI_VERSIONS = {
+        "2.6", // Asterisk 13
+        "2.7", // Asterisk 13.2
+        "2.8", // Asterisk >13.5
+        "2.9", // Asterisk >13.3
+        "3.1", // Asterisk =14.3
+        "3.2", // Asterisk 14.4.0
+        "4.0", // Asterisk 15
+        "5.0", // Asterisk 16
+    };
 
     private static final AtomicLong idCounter = new AtomicLong(0);
 
@@ -619,16 +643,24 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
 
         while (attempts++ < MAX_VERSION_ATTEMPTS)
         {
-            try {
+            try
+            {
                 AsteriskVersion version = determineVersionByCoreSettings();
-                if (version != null) return version;
-            } catch (Exception e) {
+                if (version != null)
+                    return version;
+            }
+            catch (Exception e)
+            {
             }
 
-            try {
+            try
+            {
                 AsteriskVersion version = determineVersionByCoreShowVersion();
-                if (version != null) return version;
-            } catch (Exception e) {
+                if (version != null)
+                    return version;
+            }
+            catch (Exception e)
+            {
             }
 
             try
@@ -641,48 +673,54 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
             } // NOPMD
         }
 
-        logger.error("Unable to determine asterisk version, assuming " + AsteriskVersion.DEFAULT_VERSION + "... you should expect problems to follow.");
+        logger.error("Unable to determine asterisk version, assuming " + AsteriskVersion.DEFAULT_VERSION
+                + "... you should expect problems to follow.");
         return AsteriskVersion.DEFAULT_VERSION;
     }
 
     /**
-     * Get asterisk version by 'core settings' actions.
-     * This is supported from Asterisk 1.6 onwards.
+     * Get asterisk version by 'core settings' actions. This is supported from
+     * Asterisk 1.6 onwards.
      *
      * @return
      * @throws Exception
      */
-    protected AsteriskVersion determineVersionByCoreSettings() throws Exception {
+    protected AsteriskVersion determineVersionByCoreSettings() throws Exception
+    {
 
         ManagerResponse response = sendAction(new CoreSettingsAction());
-        if (!(response instanceof CoreSettingsResponse)) {
+        if (!(response instanceof CoreSettingsResponse))
+        {
             // NOTE: you need system or reporting permissions
             logger.info("Could not get core settings, do we have the necessary permissions?");
             return null;
         }
 
-        String ver = ((CoreSettingsResponse)response).getAsteriskVersion();
+        String ver = ((CoreSettingsResponse) response).getAsteriskVersion();
         return AsteriskVersion.getDetermineVersionFromString("Asterisk " + ver);
     }
 
     /**
-     * Determine version by the 'core show version' command.
-     * This needs 'command' permissions.
+     * Determine version by the 'core show version' command. This needs
+     * 'command' permissions.
      *
      * @return
      * @throws Exception
      */
-    protected AsteriskVersion determineVersionByCoreShowVersion() throws Exception {
+    protected AsteriskVersion determineVersionByCoreShowVersion() throws Exception
+    {
         final ManagerResponse coreShowVersionResponse = sendAction(new CommandAction(CMD_SHOW_VERSION));
 
-        if (coreShowVersionResponse == null || !(coreShowVersionResponse instanceof CommandResponse)) {
+        if (coreShowVersionResponse == null || !(coreShowVersionResponse instanceof CommandResponse))
+        {
             // this needs 'command' permissions
             logger.info("Could not get response for 'core show version'");
             return null;
         }
 
         final List<String> coreShowVersionResult = ((CommandResponse) coreShowVersionResponse).getResult();
-        if (coreShowVersionResult == null || coreShowVersionResult.isEmpty()) {
+        if (coreShowVersionResult == null || coreShowVersionResult.isEmpty())
+        {
             logger.warn("Got empty response for 'core show version'");
             return null;
         }
@@ -786,7 +824,7 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
 
     /**
      * Implements synchronous sending of "simple" actions.
-     * 
+     *
      * @param timeout - in milliseconds
      */
     public ManagerResponse sendAction(ManagerAction action, long timeout)
@@ -886,7 +924,8 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
         if (action instanceof CoreSettingsAction)
             return true;
 
-        if (action instanceof CommandAction) {
+        if (action instanceof CommandAction)
+        {
             String cmd = ((CommandAction) action).getCommand();
             return CMD_SHOW_VERSION.equals(cmd);
         }
@@ -1294,10 +1333,34 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
         }
     }
 
+    private boolean isSupportedProtocolIdentifier(final String identifier)
+    {
+
+        // Normal version checks
+        for (String supportedVersion : SUPPORTED_AMI_VERSIONS)
+        {
+            String prefix = "Asterisk Call Manager/" + supportedVersion + ".";
+            if (identifier.startsWith(prefix))
+            {
+                return true;
+            }
+        }
+    
+        // Other cases
+        if ("OpenPBX Call Manager/1.0".equals(identifier))
+            return true;
+        if ("CallWeaver Call Manager/1.0".equals(identifier))
+            return true;
+        if (identifier.startsWith("Asterisk Call Manager Proxy/"))
+            return true;
+    
+        return false;
+    }
+
     /**
      * This method is called when a {@link ProtocolIdentifierReceivedEvent} is
      * received from the reader. Having received a correct protocol identifier
-     * is the precodition for logging in.
+     * is the precondition for logging in.
      *
      * @param identifier the protocol version used by the Asterisk server.
      */
@@ -1305,30 +1368,7 @@ public class ManagerConnectionImpl implements ManagerConnection, Dispatcher
     {
         logger.info("Connected via " + identifier);
 
-        // NOTE: value is AMI_VERSION, defined in include/asterisk/manager.h
-
-        if (!"Asterisk Call Manager/2.6.0".equals(identifier) // Asterisk
-                                                                     // 13
-                && !"Asterisk Call Manager/2.7.0".equals(identifier) // Asterisk
-                                                                     // 13.2
-                && !"Asterisk Call Manager/2.8.0".equals(identifier) // Asterisk
-                                                                     // > 13.5
-
-                && !"Asterisk Call Manager/2.9.0".equals(identifier) // Asterisk
-                                                                     // > 13.13
-
-                && !"Asterisk Call Manager/3.1.0".equals(identifier) // Asterisk
-                                                                     // =14.3.0
-
-                && !"Asterisk Call Manager/3.2.0".equals(identifier) // since Asterisk 14.4.0
-
-                && !"Asterisk Call Manager/4.0.0".equals(identifier) // since Asterisk 15
-                && !"Asterisk Call Manager/4.0.1".equals(identifier) // since Asterisk 15.1
-                && !"Asterisk Call Manager/4.0.2".equals(identifier) // since Asterisk 15.2
-                && !"Asterisk Call Manager/4.0.3".equals(identifier) // since Asterisk 15.3
-
-                && !"OpenPBX Call Manager/1.0".equals(identifier) && !"CallWeaver Call Manager/1.0".equals(identifier)
-                && !(identifier != null && identifier.startsWith("Asterisk Call Manager Proxy/")))
+        if (identifier == null || !isSupportedProtocolIdentifier(identifier))
         {
             logger.warn("Unsupported protocol version '" + identifier + "'. Use at your own risk.");
         }
