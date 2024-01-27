@@ -1,21 +1,10 @@
 package org.asteriskjava.pbx.internal.core;
 
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
-
-import org.asteriskjava.pbx.AgiChannelActivityAction;
-import org.asteriskjava.pbx.AsteriskSettings;
-import org.asteriskjava.pbx.CallerID;
-import org.asteriskjava.pbx.Channel;
-import org.asteriskjava.pbx.ChannelFactory;
-import org.asteriskjava.pbx.ChannelHangupListener;
-import org.asteriskjava.pbx.EndPoint;
-import org.asteriskjava.pbx.InvalidChannelName;
-import org.asteriskjava.pbx.PBX;
-import org.asteriskjava.pbx.PBXFactory;
-import org.asteriskjava.pbx.TechType;
+import org.asteriskjava.pbx.*;
 import org.asteriskjava.util.Log;
 import org.asteriskjava.util.LogFactory;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * TODO set the channel unique id when registering against an existing channel
@@ -34,11 +23,10 @@ import org.asteriskjava.util.LogFactory;
  * that pass around an iChannel rather than a raw channel name. By doing this
  * the rename affectively becomes global updating every instance of the channel
  * (because they actually only have an instance handle).
- * 
+ *
  * @author bsutton
  */
-public class ChannelImpl implements Channel
-{
+public class ChannelImpl implements Channel {
     public static final String ZOMBIE = "<ZOMBIE>"; //$NON-NLS-1$
     public static final String MASQ = "<MASQ>"; //$NON-NLS-1$
 
@@ -164,20 +152,18 @@ public class ChannelImpl implements Channel
      * hangup extension 'h' in the dialplan. <br>
      * <br>
      * The channel name is stripped of the Action, MASQ and ZOMBIE elements.
-     * 
+     *
      * @param asteriskStateName
      * @throws InvalidChannelName
      */
-    ChannelImpl(final String channelName, final String uniqueID) throws InvalidChannelName
-    {
+    ChannelImpl(final String channelName, final String uniqueID) throws InvalidChannelName {
         if (uniqueID == null)
             throw new IllegalArgumentException("The UniqueID may not be null."); //$NON-NLS-1$
 
         if (channelName == null)
             throw new IllegalArgumentException("The channelName may not be null."); //$NON-NLS-1$
 
-        if (uniqueID.compareToIgnoreCase("-1") == 0)
-        {
+        if (uniqueID.compareToIgnoreCase("-1") == 0) {
             logger.debug("uniqueID is -1");
         }
 
@@ -193,24 +179,20 @@ public class ChannelImpl implements Channel
      * a complete clone just the key elements that we generally track on our
      * side rather than getting directly from asterisk.
      */
-    public void masquerade(Channel channel)
-    {
+    public void masquerade(Channel channel) {
         // If the channel doesn't have a caller id
         // preserve the existing one (as given this is a clone they should be
         // identical).
         // Asterisk doesn't always pass the caller ID on the channel hence this
         // protects us from Asterisk accidentally clearing the caller id.
-        if (channel.hasCallerID())
-        {
+        if (channel.hasCallerID()) {
             this._callerID = channel.getCallerID();
-        }
-        else if (this._callerID != null && ((ChannelImpl) channel)._callerID != null)
-        {
+        } else if (this._callerID != null && ((ChannelImpl) channel)._callerID != null) {
             // Force the caller id back into the channel so it has one as well.
             PBX pbx = PBXFactory.getActivePBX();
-            if (this._callerID != null)
-            {
-                ((ChannelImpl) channel)._callerID = pbx.buildCallerID(this._callerID.getNumber(), this._callerID.getName());
+            if (this._callerID != null) {
+                ((ChannelImpl) channel)._callerID = pbx.buildCallerID(this._callerID.getNumber(),
+                        this._callerID.getName());
             }
         }
 
@@ -226,8 +208,7 @@ public class ChannelImpl implements Channel
         this._sweepStartTime = null;
     }
 
-    private void setChannelName(final String channelName) throws InvalidChannelName
-    {
+    private void setChannelName(final String channelName) throws InvalidChannelName {
         logger.debug("Renamed channel from " + this._channelName + " to " + channelName);
         this._channelName = this.cleanChannelName(channelName);
         this.validateChannelName(this._channelName);
@@ -242,15 +223,11 @@ public class ChannelImpl implements Channel
         // we don't really care about.
         // If the peer name still matches then we have a malformed channel
         // name.
-        if ((this._channelName.compareTo(this.getEndPoint().getFullyQualifiedName()) == 0) && !this._isConsole)
-        {
-            if (ChannelImpl.logCounter > 0)
-            {
+        if ((this._channelName.compareTo(this.getEndPoint().getFullyQualifiedName()) == 0) && !this._isConsole) {
+            if (ChannelImpl.logCounter > 0) {
                 ChannelImpl.logger.warn("Invalid channel name " + this._channelName); //$NON-NLS-1$
                 ChannelImpl.logCounter--;
-            }
-            else if (ChannelImpl.logCounter == 0)
-            {
+            } else if (ChannelImpl.logCounter == 0) {
                 ChannelImpl.logger.warn("Further Invalid channel name warnings suppressed"); //$NON-NLS-1$
                 ChannelImpl.logCounter--;
             }
@@ -260,52 +237,45 @@ public class ChannelImpl implements Channel
     /**
      * validates the channel name. Validate is to be called after the channel
      * has been cleaned.
-     * 
+     *
      * @param channelName
      * @throws InvalidChannelName
      */
-    private void validateChannelName(final String channelName) throws InvalidChannelName
-    {
-        if (!this._isConsole)
-        {
-            if (!TechType.hasValidTech(channelName))
-            {
+    private void validateChannelName(final String channelName) throws InvalidChannelName {
+        if (!this._isConsole) {
+            if (!TechType.hasValidTech(channelName)) {
                 throw new InvalidChannelName("Invalid channelName: " + channelName + ". Unknown tech."); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
             // Check we have the expected hypen
             final int hypen = channelName.indexOf("-"); //$NON-NLS-1$
-            if (hypen == -1)
-            {
+            if (hypen == -1) {
                 throw new InvalidChannelName("Invalid channelName: " + channelName + ". Missing hypen."); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
             // Check we have the expected slash
             final int slash = channelName.indexOf("/"); //$NON-NLS-1$
-            if (slash == -1)
-            {
+            if (slash == -1) {
                 throw new InvalidChannelName("Invalid channelName: " + channelName + ". Missing slash."); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
             // Check that the hypen is after the slash.
-            if (hypen < slash)
-            {
-                throw new InvalidChannelName("Invalid channelName: " + channelName + ". Hypen must be after the slash."); //$NON-NLS-1$ //$NON-NLS-2$
+            if (hypen < slash) {
+                throw new InvalidChannelName(
+                        "Invalid channelName: " + channelName + ". Hypen must be after the slash."); //$NON-NLS-1$ //$NON-NLS-2$
             }
 
             // Check that there is at least one characters between the hypen and
             // the
             // slash
-            if ((hypen - slash) < 2)
-            {
+            if ((hypen - slash) < 2) {
                 throw new InvalidChannelName("Invalid channelName: " + channelName //$NON-NLS-1$
                         + ". Must be one character between the hypen and the slash."); //$NON-NLS-1$
             }
 
             // Check that the channel sequence number is at least 1 character
             // long.
-            if ((channelName.length() - hypen) < 2)
-            {
+            if ((channelName.length() - hypen) < 2) {
                 throw new InvalidChannelName("Invalid channelName: " + channelName //$NON-NLS-1$
                         + ". The channel sequence number must be at least 1 character."); //$NON-NLS-1$
             }
@@ -318,12 +288,11 @@ public class ChannelImpl implements Channel
      * whitespace 2) convert to upper case for easy string comparisions 3) strip
      * of the masquerade prefix if it exists and mark the channel as
      * masquerading 4) strip the zombie suffix and mark it as being a zombie.
-     * 
+     *
      * @param name
      * @return
      */
-    private String cleanChannelName(final String name)
-    {
+    private String cleanChannelName(final String name) {
         String cleanedName = name.trim().toUpperCase();
 
         // If if the channel is the console
@@ -336,19 +305,17 @@ public class ChannelImpl implements Channel
         // Check if the channel is in an action
         boolean wasInAction = this._isInAction;
         this._isInAction = false;
-        for (final String prefix : ChannelImpl._actions)
-        {
-            if (cleanedName.startsWith(prefix))
-            {
+        for (final String prefix : ChannelImpl._actions) {
+            if (cleanedName.startsWith(prefix)) {
                 this._isInAction = true;
                 this._actionPrefix = cleanedName.substring(0, prefix.length() - 1);
                 cleanedName = cleanedName.substring(prefix.length());
                 break;
             }
         }
-        if (wasInAction != this._isInAction)
-        {
-            logger.debug("Channel " + this + " : inaction status changed from " + wasInAction + " to " + this._isInAction);
+        if (wasInAction != this._isInAction) {
+            logger.debug(
+                    "Channel " + this + " : inaction status changed from " + wasInAction + " to " + this._isInAction);
         }
 
         // Channels can be marked as in a zombie state
@@ -356,8 +323,7 @@ public class ChannelImpl implements Channel
         // as a
         // zombie.
         this._isZombie = false;
-        if (cleanedName.contains(ChannelImpl.ZOMBIE))
-        {
+        if (cleanedName.contains(ChannelImpl.ZOMBIE)) {
             this._isZombie = true;
             cleanedName = cleanedName.substring(0, cleanedName.indexOf(ChannelImpl.ZOMBIE));
         }
@@ -369,8 +335,7 @@ public class ChannelImpl implements Channel
         // word
         // <MASQ> added as a suffix.
         this._isMasqueraded = false;
-        if (cleanedName.contains(ChannelImpl.MASQ))
-        {
+        if (cleanedName.contains(ChannelImpl.MASQ)) {
             this._isMasqueraded = true;
             cleanedName = cleanedName.substring(0, cleanedName.indexOf(ChannelImpl.MASQ));
         }
@@ -379,15 +344,13 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public void rename(final String newName, String uniqueId) throws InvalidChannelName
-    {
+    public void rename(final String newName, String uniqueId) throws InvalidChannelName {
 
         String oldChannelName = getChannelName();
         logger.info("Changing " + oldChannelName + " to " + newName + " on " + oldChannelName + " " + _uniqueID);
         this.setChannelName(newName);
 
-        if (_uniqueID.equalsIgnoreCase("-1"))
-        {
+        if (_uniqueID.equalsIgnoreCase("-1")) {
             logger.info("Changing " + _uniqueID + " to " + uniqueId + " on " + oldChannelName + " " + _uniqueID);
             _uniqueID = uniqueId;
         }
@@ -403,14 +366,12 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public String getChannelName()
-    {
+    public String getChannelName() {
         return this._channelName;
     }
 
     @Override
-    public EndPoint getEndPoint()
-    {
+    public EndPoint getEndPoint() {
         return this._endPoint;
     }
 
@@ -422,12 +383,10 @@ public class ChannelImpl implements Channel
      * form: DAHDI/i<span>/<number>[:<subaddress>]-0000000123 With the peer name
      * of the form: DAHDI/i<span>/<number>[:<subaddress>]
      */
-    private final String extractPeerName(final String channelName)
-    {
+    private final String extractPeerName(final String channelName) {
         // Find the start of the sequence number
         int channelNameEndPoint = channelName.lastIndexOf("-"); //$NON-NLS-1$
-        if (channelNameEndPoint == -1)
-        {
+        if (channelNameEndPoint == -1) {
             channelNameEndPoint = channelName.length();
         }
         // return the peer name which is everything before the sequence number
@@ -435,19 +394,17 @@ public class ChannelImpl implements Channel
         return channelName.substring(0, channelNameEndPoint);
     }
 
-    boolean wasMarkedDuringSweep()
-    {
+    boolean wasMarkedDuringSweep() {
         boolean ret = false;
-        if (this._sweepStartTime == null || this._marked)
-        {
+        if (this._sweepStartTime == null || this._marked) {
             this._sweepStartTime = null;
             ret = true;
         }
         return ret;
     }
 
-    public void setCallerId(final CallerID callerId)
-    {
+    @Override
+    public void setCallerId(final CallerID callerId) {
         this._callerID = callerId;
     }
 
@@ -456,17 +413,15 @@ public class ChannelImpl implements Channel
      * false. At the end of the sweep the marked flag should have been set to
      * true. If not then this channel has been hungup.
      */
-    void startSweep()
-    {
-        this._sweepStartTime = new Date().getTime();
+    void startSweep() {
+        this._sweepStartTime = System.currentTimeMillis();
         this._marked = false;
     }
 
     /**
      * The channel was found to be active on asterisk so it is still alive.
      */
-    void markChannel()
-    {
+    void markChannel() {
         this._marked = true;
 
     }
@@ -479,66 +434,49 @@ public class ChannelImpl implements Channel
      * **************************
      */
     @Override
-    public boolean isSame(final Channel _rhs)
-    {
+    public boolean isSame(final Channel _rhs) {
         boolean equals = false;
 
-        if (_rhs == null)
-        {
+        if (_rhs == null) {
             logger.warn("isSame called with null");
             return false;
         }
         ChannelImpl rhs;
-        if (_rhs instanceof ChannelImpl)
-        {
+        if (_rhs instanceof ChannelImpl) {
             rhs = (ChannelImpl) _rhs;
-        }
-        else
-        {
+        } else {
             rhs = ((ChannelProxy) _rhs).getRealChannel();
         }
         // If we have unique id's for both channels then we can compare the id's
         // directly.
         if ((this._uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0)
-                && (rhs._uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0))
-        {
-            if (this._uniqueID.compareToIgnoreCase(rhs._uniqueID) == 0)
-            {
+                && (rhs._uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0)) {
+            if (this._uniqueID.compareToIgnoreCase(rhs._uniqueID) == 0) {
                 equals = true;
             }
-        }
-        else
-        {
+        } else {
             boolean ok = (this._channelName != null) && (rhs._channelName != null);
             final boolean namesMatch = (ok && (this._channelName.compareToIgnoreCase(rhs._channelName) == 0));
 
-            if (namesMatch)
-            {
+            if (namesMatch) {
                 // check if the actions match
-                if (this._isInAction != rhs._isInAction)
-                {
+                if (this._isInAction != rhs._isInAction) {
                     ok = false;
-                }
-                else if (this._isInAction)
-                {
+                } else if (this._isInAction) {
                     ok = this._actionPrefix.compareTo(rhs._actionPrefix) == 0;
                 }
             }
 
-            if (ok && namesMatch)
-            {
+            if (ok && namesMatch) {
                 // check if the zombie match
-                if (this._isZombie != rhs._isZombie)
-                {
+                if (this._isZombie != rhs._isZombie) {
                     ok = false;
                 }
             }
 
-            if (ok && namesMatch)
-            {
+            if (ok && namesMatch) {
                 // check if the masquerade match
-                if (this._isMasqueraded != rhs._isMasqueraded)
-                {
+                if (this._isMasqueraded != rhs._isMasqueraded) {
                     ok = false;
                 }
             }
@@ -549,19 +487,14 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public boolean isSame(final String extendedChannelName, final String uniqueID)
-    {
+    public boolean isSame(final String extendedChannelName, final String uniqueID) {
         boolean equals = false;
         if ((this._uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0)
-                && (uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0))
-        {
-            if (this._uniqueID.compareTo(uniqueID) == 0)
-            {
+                && (uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0)) {
+            if (this._uniqueID.compareTo(uniqueID) == 0) {
                 equals = true;
             }
-        }
-        else
-        {
+        } else {
             equals = this.sameExtenededChannelName(extendedChannelName);
         }
 
@@ -569,8 +502,7 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public boolean sameExtenededChannelName(final String extendedChannelName)
-    {
+    public boolean sameExtenededChannelName(final String extendedChannelName) {
         boolean ok = (this.getExtendedChannelName() != null) && (extendedChannelName != null);
 
         return ok && (this.getExtendedChannelName().compareToIgnoreCase(extendedChannelName) == 0);
@@ -578,18 +510,15 @@ public class ChannelImpl implements Channel
 
     /**
      * Try to match a channel based solely on its unique ID
-     * 
+     *
      * @param uniqueID
      * @return
      */
-    public boolean sameUniqueID(String uniqueID)
-    {
+    public boolean sameUniqueID(String uniqueID) {
         boolean equals = false;
         if ((this._uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0)
-                && (uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0))
-        {
-            if (this._uniqueID.compareTo(uniqueID) == 0)
-            {
+                && (uniqueID.compareTo(ChannelImpl.UNKNOWN_UNIQUE_ID) != 0)) {
+            if (this._uniqueID.compareTo(uniqueID) == 0) {
                 equals = true;
             }
         }
@@ -598,33 +527,28 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public boolean sameEndPoint(final Channel rhs)
-    {
+    public boolean sameEndPoint(final Channel rhs) {
         return this.sameEndPoint(rhs.getEndPoint());
     }
 
     @Override
-    public boolean sameEndPoint(final EndPoint rhs)
-    {
+    public boolean sameEndPoint(final EndPoint rhs) {
         boolean ok = (this._endPoint != null) && (rhs != null);
         return ok && this._endPoint.isSame(rhs);
     }
 
     @Override
-    public long getChannelId()
-    {
+    public long getChannelId() {
         return this._channelId;
     }
 
     @Override
-    public boolean isLive()
-    {
+    public boolean isLive() {
         return this._isLive;
     }
 
     @Override
-    public void addHangupListener(final ChannelHangupListener listener)
-    {
+    public void addHangupListener(final ChannelHangupListener listener) {
         if (this.hangupListener != null)
             throw new IllegalStateException("This channel may only have ONE listener which should be its ChannelProxy"); //$NON-NLS-1$
 
@@ -632,8 +556,7 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public void removeListener(final ChannelHangupListener listener)
-    {
+    public void removeListener(final ChannelHangupListener listener) {
 
         if (this.hangupListener != listener)
             throw new IllegalStateException("An invalid attempt was made to remove a non-existant listener."); //$NON-NLS-1$
@@ -649,143 +572,144 @@ public class ChannelImpl implements Channel
      * has been hung up.
      */
     @Override
-    public void notifyHangupListeners(Integer cause, String causeText)
-    {
+    public void notifyHangupListeners(Integer cause, String causeText) {
         this._isLive = false;
-        if (this.hangupListener != null)
-        {
+        if (this.hangupListener != null) {
             this.hangupListener.channelHangup(this, cause, causeText);
-        }
-        else
-        {
+        } else {
             logger.warn("Hangup listener is null");
         }
     }
 
     @Override
-    public boolean isConnectedTo(final EndPoint endPoint)
-    {
+    public boolean isConnectedTo(final EndPoint endPoint) {
         return this._endPoint.isSame(endPoint);
     }
 
     @Override
-    public boolean isMute()
-    {
+    public boolean isMute() {
         return this._muted;
     }
 
     @Override
-    public void setMute(final boolean mutedState)
-    {
+    public void setMute(final boolean mutedState) {
         this._muted = mutedState;
     }
 
     @Override
-    public void setParked(final boolean parked)
-    {
+    public void setParked(final boolean parked) {
         this._parked = parked;
 
     }
 
     @Override
-    public boolean isParked()
-    {
+    public boolean isParked() {
         return this._parked;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return this.getExtendedChannelName() + ":" + this._uniqueID; //$NON-NLS-1$
     }
 
     /**
      * Returns the full channel name including the masquerade prefix and the
      * zombie suffix.
-     * 
+     *
      * @return
      */
+
     @Override
-    public String getExtendedChannelName()
-    {
-        final StringBuilder name = new StringBuilder();
+    public String getExtendedChannelName() {
+        int state = getState();
+        if (state != lastState || !_channelName.equals(lastChannelName)) {
+            final StringBuilder name = new StringBuilder();
 
-        if (this._isInAction)
-        {
-            name.append(this._actionPrefix);
-            name.append("/"); //$NON-NLS-1$
+            if (this._isInAction) {
+                name.append(this._actionPrefix);
+                name.append("/"); //$NON-NLS-1$
+            }
+            name.append(this._channelName);
+
+            if (this._isMasqueraded) {
+                name.append(ChannelImpl.MASQ);
+            }
+
+            if (this._isZombie) {
+                name.append(ChannelImpl.ZOMBIE);
+            }
+            lastState = state;
+            lastChannelName = _channelName;
+            cachedExtenedChannelName = name.toString();
+
         }
-        name.append(this._channelName);
-
-        if (this._isMasqueraded)
-        {
-            name.append(ChannelImpl.MASQ);
-        }
-
-        if (this._isZombie)
-        {
-            name.append(ChannelImpl.ZOMBIE);
-        }
-
-        return name.toString();
+        return cachedExtenedChannelName;
 
     }
 
+    String cachedExtenedChannelName = null;
+    int lastState = -1;
+    String lastChannelName = null;
+
+    int getState() {
+        int state = 0;
+        if (_isInAction) {
+            state += 2;
+        }
+        if (_isZombie) {
+            state += 4;
+        }
+        if (_isMasqueraded) {
+            state += 8;
+        }
+        return state;
+    }
+
     @Override
-    public boolean isLocal()
-    {
+    public boolean isLocal() {
         return this._endPoint.isLocal();
     }
 
     @Override
-    public boolean isZombie()
-    {
+    public boolean isZombie() {
         return this._isZombie;
     }
 
     @Override
-    public boolean isConsole()
-    {
+    public boolean isConsole() {
         return this._isConsole;
     }
 
-    TechType getTech()
-    {
+    TechType getTech() {
         return this._endPoint.getTech();
     }
 
     /**
      * Returns the actionPrefix for the channel or an empty string if the
      * channel is not doing an action.
-     * 
+     *
      * @return
      */
-    String getActionPrefix()
-    {
+    String getActionPrefix() {
         return this._isInAction ? this._actionPrefix : ""; //$NON-NLS-1$
     }
 
-    boolean isInAction()
-    {
+    boolean isInAction() {
         return this._isInAction;
     }
 
-    boolean isMasqueraded()
-    {
+    boolean isMasqueraded() {
         return this._isMasqueraded;
     }
 
     @Override
-    public boolean hasCallerID()
-    {
+    public boolean hasCallerID() {
         return this._callerID != null && !this._callerID.isUnknown();
     }
 
     @Override
-    public CallerID getCallerID()
-    {
-        if (this._callerID == null)
-        {
+    public CallerID getCallerID() {
+        if (this._callerID == null) {
             final CoherentManagerConnection smc = CoherentManagerConnection.getInstance();
             final String number = smc.getVariable(this, "CALLERID(number)"); //$NON-NLS-1$
             final String name = smc.getVariable(this, "CALLERID(name)"); //$NON-NLS-1$
@@ -798,8 +722,7 @@ public class ChannelImpl implements Channel
     }
 
     @Override
-    public String getUniqueId()
-    {
+    public String getUniqueId() {
         return this._uniqueID;
     }
 
@@ -812,14 +735,12 @@ public class ChannelImpl implements Channel
      * never hangup.
      */
     @Override
-    public boolean canDetectHangup()
-    {
+    public boolean canDetectHangup() {
         boolean canDetectHangup = true;
 
         AsteriskSettings profile = PBXFactory.getActiveProfile();
         final boolean detect = profile.getCanDetectHangup();
-        if (!this.getEndPoint().isSIP() && !detect)
-        {
+        if (!this.getEndPoint().isSIP() && !detect) {
             canDetectHangup = false;
         }
         return canDetectHangup;
@@ -829,42 +750,36 @@ public class ChannelImpl implements Channel
      * Returns true if the channel is quiescent. A quescent channel is one that
      * is current not going through a transition (name change) such as MASQ,
      * ZOMBIE, ASYNC, PARK
-     * 
+     *
      * @return
      */
     @Override
-    public boolean isQuiescent()
-    {
+    public boolean isQuiescent() {
         return !(_isInAction || _isMasqueraded || _isZombie);
     }
 
     @Override
-    public AgiChannelActivityAction getCurrentActivityAction()
-    {
+    public AgiChannelActivityAction getCurrentActivityAction() {
         throw new RuntimeException("This method is only implemented in ChannelProxy");
     }
 
     @Override
-    public void setCurrentActivityAction(AgiChannelActivityAction action)
-    {
+    public void setCurrentActivityAction(AgiChannelActivityAction action) {
         throw new RuntimeException("This method is only implemented in ChannelProxy");
     }
 
     @Override
-    public void setIsInAgi(boolean b)
-    {
+    public void setIsInAgi(boolean b) {
         throw new RuntimeException("This method is only implemented in ChannelProxy");
     }
 
     @Override
-    public boolean isInAgi()
-    {
+    public boolean isInAgi() {
         throw new RuntimeException("This method is only implemented in ChannelProxy");
     }
 
     @Override
-    public boolean waitForChannelToReachAgi(long timeout, TimeUnit timeunit) throws InterruptedException
-    {
+    public boolean waitForChannelToReachAgi(long timeout, TimeUnit timeunit) throws InterruptedException {
         throw new RuntimeException("This method is only implemented in ChannelProxy");
     }
 

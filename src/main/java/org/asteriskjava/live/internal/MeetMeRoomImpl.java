@@ -16,106 +16,89 @@
  */
 package org.asteriskjava.live.internal;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.asteriskjava.live.ManagerCommunicationException;
 import org.asteriskjava.live.MeetMeRoom;
 import org.asteriskjava.live.MeetMeUser;
+import org.asteriskjava.lock.LockableMap;
+import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.action.CommandAction;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 
 /**
  * Default implementation of the MeetMeRoom interface.
  */
-class MeetMeRoomImpl extends AbstractLiveObject implements MeetMeRoom
-{
+class MeetMeRoomImpl extends AbstractLiveObject implements MeetMeRoom {
     private static final String COMMAND_PREFIX = "meetme";
     private static final String LOCK_COMMAND = "lock";
     private static final String UNLOCK_COMMAND = "unlock";
 
     private final String roomNumber;
-    
+
     /**
      * Maps userNumber to user.
      */
-    private final Map<Integer, MeetMeUserImpl> users;
+    private final LockableMap<Integer, MeetMeUserImpl> users;
 
-    MeetMeRoomImpl(AsteriskServerImpl server, String roomNumber)
-    {
+    MeetMeRoomImpl(AsteriskServerImpl server, String roomNumber) {
         super(server);
         this.roomNumber = roomNumber;
-        this.users = new HashMap<>(20);
+        this.users = new LockableMap<>(new HashMap<>(20));
     }
 
-    public String getRoomNumber()
-    {
+    public String getRoomNumber() {
         return roomNumber;
     }
 
-    public Collection<MeetMeUser> getUsers()
-    {
-        synchronized (users)
-        {
+    public Collection<MeetMeUser> getUsers() {
+        try (LockCloser closer = users.withLock()) {
             return new ArrayList<MeetMeUser>(users.values());
         }
     }
 
-    public boolean isEmpty()
-    {
-        synchronized (users)
-        {
+    public boolean isEmpty() {
+        try (LockCloser closer = users.withLock()) {
             return users.isEmpty();
         }
     }
 
-    Collection<MeetMeUserImpl> getUserImpls()
-    {
-        synchronized (users)
-        {
+    Collection<MeetMeUserImpl> getUserImpls() {
+        try (LockCloser closer = users.withLock()) {
             return new ArrayList<>(users.values());
         }
     }
-    
-    void addUser(MeetMeUserImpl user)
-    {
-        synchronized (users)
-        {
+
+    void addUser(MeetMeUserImpl user) {
+        try (LockCloser closer = users.withLock()) {
             users.put(user.getUserNumber(), user);
         }
     }
 
-    MeetMeUserImpl getUser(Integer userNumber)
-    {
-        synchronized (users)
-        {
+    MeetMeUserImpl getUser(Integer userNumber) {
+        try (LockCloser closer = users.withLock()) {
             return users.get(userNumber);
         }
     }
 
-    void removeUser(MeetMeUserImpl user)
-    {
-        synchronized (users)
-        {
+    void removeUser(MeetMeUserImpl user) {
+        try (LockCloser closer = users.withLock()) {
             users.remove(user.getUserNumber());
         }
     }
 
     // action methods
 
-    public void lock() throws ManagerCommunicationException
-    {
+    public void lock() throws ManagerCommunicationException {
         sendMeetMeCommand(LOCK_COMMAND);
     }
 
-    public void unlock() throws ManagerCommunicationException
-    {
+    public void unlock() throws ManagerCommunicationException {
         sendMeetMeCommand(UNLOCK_COMMAND);
     }
 
-    private void sendMeetMeCommand(String command) throws ManagerCommunicationException
-    {
+    private void sendMeetMeCommand(String command) throws ManagerCommunicationException {
         final StringBuilder sb = new StringBuilder();
         sb.append(COMMAND_PREFIX);
         sb.append(" ");
@@ -127,15 +110,13 @@ class MeetMeRoomImpl extends AbstractLiveObject implements MeetMeRoom
     }
 
     @Override
-   public String toString()
-    {
-    	StringBuilder sb;
+    public String toString() {
+        StringBuilder sb;
         int systemHashcode;
 
         sb = new StringBuilder("MeetMeRoom[");
 
-        synchronized (this)
-        {
+        try (LockCloser closer = this.withLock()) {
             sb.append("roomNumber='").append(getRoomNumber()).append("',");
             systemHashcode = System.identityHashCode(this);
         }

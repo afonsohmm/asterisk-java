@@ -18,6 +18,7 @@ package org.asteriskjava.live.internal;
 
 import org.asteriskjava.live.AgentState;
 import org.asteriskjava.live.AsteriskAgent;
+import org.asteriskjava.lock.Locker.LockCloser;
 
 /**
  * Default implementation of the AsteriskAgent interface.
@@ -25,17 +26,14 @@ import org.asteriskjava.live.AsteriskAgent;
  * @author Patrick Breucking
  * @version $Id$
  */
-public class AsteriskAgentImpl extends AbstractLiveObject implements AsteriskAgent
-{
+public class AsteriskAgentImpl extends AbstractLiveObject implements AsteriskAgent {
     private String name;
     private String agentId;
     private AgentState state;
 
-    AsteriskAgentImpl(AsteriskServerImpl server, String name, String agentId, AgentState state)
-    {
+    AsteriskAgentImpl(AsteriskServerImpl server, String name, String agentId, AgentState state) {
         super(server);
-        if (server == null || name == null || agentId == null)
-        {
+        if (server == null || name == null || agentId == null) {
             throw new IllegalArgumentException("Parameters passed to AsteriskAgentImpl() must not be null.");
         }
         this.name = name;
@@ -43,31 +41,29 @@ public class AsteriskAgentImpl extends AbstractLiveObject implements AsteriskAge
         this.state = state;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public String getAgentId()
-    {
+    public String getAgentId() {
         return agentId;
     }
 
-    public AgentState getState()
-    {
+    public AgentState getState() {
         return state;
     }
 
-    synchronized void updateState(AgentState state)
-    {
-        final AgentState oldState = this.state;
-        this.state = state;
-        firePropertyChange(PROPERTY_STATE, oldState, this.state);
+    void updateState(AgentState state) {
+
+        try (LockCloser closer = this.withLock()) {
+            final AgentState oldState = this.state;
+            this.state = state;
+            firePropertyChange(PROPERTY_STATE, oldState, this.state);
+        }
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         final StringBuilder sb;
 
         sb = new StringBuilder("AsteriskAgent[");

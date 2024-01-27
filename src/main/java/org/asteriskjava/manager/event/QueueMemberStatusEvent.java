@@ -18,53 +18,45 @@ package org.asteriskjava.manager.event;
 
 /**
  * A QueueMemberStatusEvent shows the status of a QueueMemberEvent
- * 
+ *
  * @author Asteria Solutions Group, Inc. http://www.asteriasgi.com/
  * @version $Id$
  */
-public class QueueMemberStatusEvent extends QueueMemberEvent
-{
+public class QueueMemberStatusEvent extends QueueMemberEvent {
     /**
      * Serializable version identifier
      */
     private static final long serialVersionUID = -2293926744791895763L;
 
     private String ringinuse;
-    private Integer incall;
+    private Integer wrapuptime;
 
     /**
      * @param source
      */
-    public QueueMemberStatusEvent(Object source)
-    {
+    public QueueMemberStatusEvent(Object source) {
         super(source);
     }
 
     /**
      * @return the ringinuse
      */
-    public String getRinginuse()
-    {
+    public String getRinginuse() {
         return ringinuse;
     }
 
     /**
      * @param ringinuse the ringinuse to set
      */
-    public void setRinginuse(String ringinuse)
-    {
+    public void setRinginuse(String ringinuse) {
         this.ringinuse = ringinuse;
     }
 
-    public Integer getIncall()
-    {
-        return incall;
+    public Integer getWrapuptime() {
+        return wrapuptime;
     }
 
-    public void setIncall(Integer incall)
-    {
-        this.incall = incall;
+    public void setWrapuptime(Integer wrapuptime) {
+        this.wrapuptime = wrapuptime;
     }
-    
-    
 }

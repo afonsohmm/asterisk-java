@@ -1,25 +1,14 @@
 package org.asteriskjava.examples.activities;
 
-import org.asteriskjava.pbx.ActivityCallback;
-import org.asteriskjava.pbx.ActivityStatusEnum;
-import org.asteriskjava.pbx.Call;
-import org.asteriskjava.pbx.CallerID;
-import org.asteriskjava.pbx.EndPoint;
-import org.asteriskjava.pbx.PBX;
-import org.asteriskjava.pbx.PBXException;
-import org.asteriskjava.pbx.PBXFactory;
-import org.asteriskjava.pbx.TechType;
-import org.asteriskjava.pbx.Trunk;
+import org.asteriskjava.pbx.*;
 import org.asteriskjava.pbx.activities.DialActivity;
 import org.asteriskjava.util.Log;
 import org.asteriskjava.util.LogFactory;
 
-public class Dial
-{
+public class Dial {
     static private Log logger = LogFactory.getLog(Dial.class);
 
-    static public void main(String[] args)
-    {
+    static public void main(String[] args) {
         syncDial();
         asyncDial();
 
@@ -30,10 +19,10 @@ public class Dial
      * starts. Using this method will lockup your UI until the dial starts. For
      * better control use the async Dial method below.
      */
-    static private void syncDial()
-    {
-        try
-        {
+    static private void syncDial() {
+        try {
+            String dialOptions = "";
+
             PBX pbx = PBXFactory.getActivePBX();
 
             // The trunk MUST match the section header (e.g. [default]) that
@@ -56,7 +45,7 @@ public class Dial
             // Trunk is currently ignored so set to null
             // The call is dialed and only returns when the call comes up (it
             // doesn't wait for the remote end to answer).
-            DialActivity dial = pbx.dial(from, fromCallerID, to, toCallerID);
+            DialActivity dial = pbx.dial(from, fromCallerID, to, toCallerID, dialOptions);
 
             Call call = dial.getNewCall();
 
@@ -64,15 +53,13 @@ public class Dial
 
             logger.warn("Hanging up");
             pbx.hangup(call);
-        }
-        catch (PBXException | InterruptedException e)
-        {
+        } catch (PBXException | InterruptedException e) {
             System.out.println(e);
         }
     }
 
-    static private void asyncDial()
-    {
+    static private void asyncDial() {
+        String dialOptions = "";
         PBX pbx = PBXFactory.getActivePBX();
 
         // We are going to dial from extension 100
@@ -87,32 +74,26 @@ public class Dial
 
         // Start the dial and return immediately.
         // progress is provided via the ActivityCallback.
-        pbx.dial(from, fromCallerID, to, toCallerID, new ActivityCallback<DialActivity>()
-        {
+        pbx.dial(from, fromCallerID, to, toCallerID, new ActivityCallback<DialActivity>() {
 
             @Override
-            public void progress(DialActivity activity, ActivityStatusEnum status, String message)
-            {
-                if (status == ActivityStatusEnum.SUCCESS)
-                {
+            public void progress(DialActivity activity, ActivityStatusEnum status, String message) {
+                if (status == ActivityStatusEnum.SUCCESS) {
                     System.out.println("Dial all good");
-                    try
-                    {
+                    try {
                         // Call is up
                         Call call = activity.getNewCall();
                         // So lets just hangup the call
                         logger.warn("Hanging up");
                         PBXFactory.getActivePBX().hangup(call.getOriginatingParty());
-                    }
-                    catch (PBXException e)
-                    {
+                    } catch (PBXException e) {
                         System.out.println(e);
                     }
                 }
                 if (status == ActivityStatusEnum.FAILURE)
                     System.out.println("Oops something bad happened when we dialed.");
             }
-        });
+        }, dialOptions);
 
     }
 

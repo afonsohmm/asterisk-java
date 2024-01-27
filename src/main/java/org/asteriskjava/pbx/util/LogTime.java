@@ -7,16 +7,13 @@ package org.asteriskjava.pbx.util;
 /**
  * @author work shop
  */
-public class LogTime
-{
-    public Long dStartTime = System.currentTimeMillis();
+public class LogTime {
+    private final Long dStartTime = System.currentTimeMillis();
 
-    public long timeTaken()
-    {
-        // returns the time taken from construction til now in milliseconds
-        // Date dStartTime = new Date();
-
+    /**
+     * @return time taken from construction until now in milliseconds
+     */
+    public long timeTaken() {
         return System.currentTimeMillis() - this.dStartTime;
-
     }
 }

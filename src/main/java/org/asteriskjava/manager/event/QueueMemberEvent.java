@@ -21,13 +21,12 @@ package org.asteriskjava.manager.event;
  * contains information about a member of a queue.
  * <p>
  * It is implemented in <code>apps/app_queue.c</code>
- * 
- * @see org.asteriskjava.manager.action.QueueStatusAction
+ *
  * @author srt
  * @version $Id$
+ * @see org.asteriskjava.manager.action.QueueStatusAction
  */
-public class QueueMemberEvent extends ResponseEvent
-{
+public class QueueMemberEvent extends ResponseEvent {
     public static final int AST_DEVICE_UNKNOWN = 0;
 
     /**
@@ -63,33 +62,32 @@ public class QueueMemberEvent extends ResponseEvent
     private String stateinterface;
     private Integer incall;
     private String pausedreason;
+    private Integer wrapuptime;
     private String _interface;
+    private Integer logintime;
 
     /**
      * @param source
      */
-    public QueueMemberEvent(Object source)
-    {
+    public QueueMemberEvent(Object source) {
         super(source);
     }
 
     /**
      * Returns the name of the queue.
-     * 
+     *
      * @return the name of the queue.
      */
-    public String getQueue()
-    {
+    public String getQueue() {
         return queue;
     }
 
     /**
      * Sets the name of the queue.
-     * 
+     *
      * @param queue the name of the queue.
      */
-    public void setQueue(String queue)
-    {
+    public void setQueue(String queue) {
         this.queue = queue;
     }
 
@@ -100,18 +98,16 @@ public class QueueMemberEvent extends ResponseEvent
      *
      * @return the name of the member's interface.
      */
-    final public String getInterface()
-    {
+    final public String getInterface() {
         return _interface;
     }
 
     /**
      * Sets the name of the member's interface.
-     * 
+     *
      * @param member the name of the member's interface.
      */
-    final public void setInterface(String _interface)
-    {
+    final public void setInterface(String _interface) {
         this._interface = _interface;
     }
 
@@ -120,26 +116,23 @@ public class QueueMemberEvent extends ResponseEvent
      * <p>
      * E.g. the channel name or agent group.
      *
-     * @deprecated since Asterisk 12
      * @return the name of the member's interface.
+     * @deprecated since Asterisk 12
      */
     @Deprecated
-    final public String getLocation()
-    {
+    final public String getLocation() {
         return _interface;
     }
 
     /**
      * Sets the name of the member's interface.
      *
-     * @deprecated since Asterisk 12
      * @param member the name of the member's interface.
+     * @deprecated since Asterisk 12
      */
     @Deprecated
-    final public void setLocation(String _interface)
-    {
-        if ((_interface != null) && (!"null".equals(_interface)))
-        { // Location is not in use since asterisk 12
+    final public void setLocation(String _interface) {
+        if ((_interface != null) && (!"null".equals(_interface))) { // Location is not in use since asterisk 12
             this._interface = _interface;
         }
     }
@@ -148,133 +141,122 @@ public class QueueMemberEvent extends ResponseEvent
      * Returns if this member has been dynamically added by the QueueAdd command
      * (in the dialplan or via the Manager API) or if this member is has been
      * statically defined in <code>queues.conf</code>.
-     * 
+     *
      * @return "dynamic" if the added member is a dynamic queue member, "static"
-     *         if the added member is a static queue member.
+     * if the added member is a static queue member.
      */
-    public String getMembership()
-    {
+    public String getMembership() {
         return membership;
     }
 
     /**
      * Convenience method that checks whether this member has been statically
      * defined in <code>queues.conf</code>.
-     * 
+     *
      * @return <code>true</code> if this member has been statically defined in
-     *         <code>queues.conf</code>, <code>false</code> otherwise.
+     * <code>queues.conf</code>, <code>false</code> otherwise.
      * @since 0.3
      */
-    public boolean isStatic()
-    {
+    public boolean isStatic() {
         return MEMBERSHIP_STATIC.equals(membership);
     }
 
     /**
      * Convenience method that checks whether this member has been dynamically
      * added by the QueueAdd command.
-     * 
+     *
      * @return <code>true</code> if this member has been dynamically added by
-     *         the QueueAdd command, <code>false</code> otherwise.
+     * the QueueAdd command, <code>false</code> otherwise.
      * @since 0.3
      */
-    public boolean isDynamic()
-    {
+    public boolean isDynamic() {
         return MEMBERSHIP_DYNAMIC.equals(membership);
     }
 
     /**
      * Sets if this member has been dynamically or statically added.
-     * 
+     *
      * @param membership "dynamic" if the added member is a dynamic queue
-     *            member, "static" if the added member is a static queue member.
+     *                   member, "static" if the added member is a static queue member.
      */
-    public void setMembership(String membership)
-    {
+    public void setMembership(String membership) {
         this.membership = membership;
     }
 
     /**
      * Returns the penalty for the added member. When calls are distributed
      * members with higher penalties are considered last.
-     * 
+     *
      * @return the penalty for the added member.
      */
-    public Integer getPenalty()
-    {
+    public Integer getPenalty() {
         return penalty;
     }
 
     /**
      * Sets the penalty for this member.
-     * 
+     *
      * @param penalty the penalty for this member.
      */
-    public void setPenalty(Integer penalty)
-    {
+    public void setPenalty(Integer penalty) {
         this.penalty = penalty;
     }
 
     /**
      * Returns the number of calls answered by the member.
-     * 
+     *
      * @return the number of calls answered by the member.
      */
-    public Integer getCallsTaken()
-    {
+    public Integer getCallsTaken() {
         return callsTaken;
     }
 
     /**
      * Sets the number of calls answered by the added member.
-     * 
+     *
      * @param callsTaken the number of calls answered by the added member.
      */
-    public void setCallsTaken(Integer callsTaken)
-    {
+    public void setCallsTaken(Integer callsTaken) {
         this.callsTaken = callsTaken;
     }
 
     /**
      * Returns the time the last successful call answered by the added member
      * was hungup.
-     * 
+     *
      * @return the time (in seconds since 01/01/1970) the last successful call
-     *         answered by the added member was hungup.
+     * answered by the added member was hungup.
      */
-    public Long getLastCall()
-    {
+    public Long getLastCall() {
         return lastCall;
     }
 
     /**
      * Sets the time the last successful call answered by this member was
      * hungup.
-     * 
+     *
      * @param lastCall the time (in seconds since 01/01/1970) the last
-     *            successful call answered by the added member was hungup.
+     *                 successful call answered by the added member was hungup.
      */
-    public void setLastCall(Long lastCall)
-    {
+    public void setLastCall(Long lastCall) {
         this.lastCall = lastCall;
     }
-    
+
     /**
      * The time when started last pause for queue member.
-     * 
+     *
      * @return the time (in seconds since 01/01/1970)
      */
-    public Long getLastPause()
-    {
+    public Long getLastPause() {
         return lastPause;
     }
-    
+
     /**
      * Sets the time when started last pause for queue member.
+     *
      * @param lastPause the time (in seconds since 01/01/1970)
      */
-    public void setLastPause(Long lastPause)
-    {
+    public void setLastPause(Long lastPause) {
         this.lastPause = lastPause;
     }
 
@@ -304,24 +286,22 @@ public class QueueMemberEvent extends ResponseEvent
      * <dt>AST_DEVICE_ONHOLD (8)</dt>
      * <dd>Device is on hold</dd>
      * </dl>
-     * 
+     *
      * @return the status of this queue member or <code>null</code> if this
-     *         attribute is not supported by your version of Asterisk.
+     * attribute is not supported by your version of Asterisk.
      * @since 0.2
      */
-    public Integer getStatus()
-    {
+    public Integer getStatus() {
         return status;
     }
 
     /**
      * Sets the status of this queue member.
-     * 
+     *
      * @param status the status of this queue member
      * @since 0.2
      */
-    public void setStatus(Integer status)
-    {
+    public void setStatus(Integer status) {
         this.status = status;
     }
 
@@ -329,24 +309,22 @@ public class QueueMemberEvent extends ResponseEvent
      * Is this queue member paused (not accepting calls)?
      * <p>
      * Available since Asterisk 1.2.
-     * 
+     *
      * @return <code>Boolean.TRUE</code> if this member has been paused,
-     *         <code>Boolean.FALSE</code> if not or <code>null</code> if pausing
-     *         is not supported by your version of Asterisk.
+     * <code>Boolean.FALSE</code> if not or <code>null</code> if pausing
+     * is not supported by your version of Asterisk.
      * @since 0.2
      */
-    public Boolean getPaused()
-    {
+    public Boolean getPaused() {
         return paused;
     }
 
     /**
      * Sets if this member has been paused.
-     * 
+     *
      * @since 0.2
      */
-    public void setPaused(Boolean paused)
-    {
+    public void setPaused(Boolean paused) {
         this.paused = paused;
     }
 
@@ -354,16 +332,14 @@ public class QueueMemberEvent extends ResponseEvent
      * Returns the name of the member.
      *
      * @return the name of the member supplied for logging when the member is
-     *         added
+     * added
      * @since 1.0.0
      */
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public void setName(String name)
-    {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -371,55 +347,62 @@ public class QueueMemberEvent extends ResponseEvent
      * Returns the name of the member.
      *
      * @return the name of the member supplied for logging when the member is
-     *         added
+     * added
      * @deprecated since 1.0.0. Use {@link #getName()} instead.
      */
     @Deprecated
-    public String getMemberName()
-    {
+    public String getMemberName() {
         return name;
     }
 
     // Renamed to "name" in Asterisk 1.6
-    public void setMemberName(String memberName)
-    {
+    public void setMemberName(String memberName) {
         this.name = memberName;
     }
 
     /**
      * @return Name of the interface where device state is taken from.
      */
-    public String getStateinterface()
-    {
+    public String getStateinterface() {
         return stateinterface;
     }
 
-    public void setStateinterface(String stateinterface)
-    {
+    public void setStateinterface(String stateinterface) {
         this.stateinterface = stateinterface;
     }
 
     /**
      * @return 1 if is incall 0 if not
      */
-    public Integer getIncall()
-    {
+    public Integer getIncall() {
         return incall;
     }
 
-    public void setIncall(Integer incall)
-    {
+    public void setIncall(Integer incall) {
         this.incall = incall;
     }
 
-    public String getPausedreason()
-    {
+    public String getPausedreason() {
         return pausedreason;
     }
 
-    public void setPausedreason(String pausedreason)
-    {
+    public void setPausedreason(String pausedreason) {
         this.pausedreason = pausedreason;
     }
 
+    public Integer getWrapuptime() {
+        return wrapuptime;
+    }
+
+    public void setWrapuptime(Integer wrapuptime) {
+        this.wrapuptime = wrapuptime;
+    }
+
+    public Integer getLogintime() {
+        return logintime;
+    }
+
+    public void setLogintime(Integer logintime) {
+        this.logintime = logintime;
+    }
 }

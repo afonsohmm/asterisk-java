@@ -44,21 +44,18 @@ Asterisk-Java is available from [here](https://github.com/asterisk-java/asterisk
 Maven Dependency
 ----------------
 
-Asterisk-Java 3.x (Java 1.8  and Asterisk Version 10 thru 16) (master)
+Asterisk-Java 3.x (Java 1.8 and Asterisk Version 10 thru 18) (master)
 
 	<dependency>
 	  <groupId>org.asteriskjava</groupId>
 	  <artifactId>asterisk-java</artifactId>
-	  <version>3.0.19</version>
+	  <version>3.39.0</version>
 	</dependency>
 
-Asterisk-Java 2.x (Java 1.7 and Asterisk < Version 10) (branch 2.0.4)
+Gradle Dependency
+----------------
 
-	<dependency>
-	  <groupId>org.asteriskjava</groupId>
-	  <artifactId>asterisk-java</artifactId>
-	  <version>2.2.0</version>
-	</dependency>
+	  implementation group: 'org.asteriskjava', name: 'asterisk-java', version: '3.39.0'
 
 
 INSTALLATION FROM SOURCE
@@ -101,7 +98,7 @@ To compile and run do:
 SYSTEM REQUIREMENTS
 -------------------
 
-Asterisk-Java needs a Java Virtual Machine of at least version 1.7 ([Java SE 7.0](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). If you want to build the jar from source, you will
+Asterisk-Java needs a Java Virtual Machine of at least version 1.8 ([Java SE 8.0](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). If you want to build the jar from source, you will
 also need [Maven](http://maven.apache.org/).
 
 LEGAL

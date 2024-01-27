@@ -1,15 +1,15 @@
 package org.asteriskjava.manager;
 
-import static org.junit.Assert.assertTrue;
-
 import org.asteriskjava.manager.event.JoinEvent;
 import org.asteriskjava.manager.event.LeaveEvent;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class AbstractManagerEventListenerTest {
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class AbstractManagerEventListenerTest {
 
     @Test
-    public void shouldHandleJoinEvent() {
+    void shouldHandleJoinEvent() {
         //given
         EventListener listener = new EventListener();
 
@@ -21,7 +21,7 @@ public class AbstractManagerEventListenerTest {
     }
 
     @Test
-    public void shouldHandleLeaveEvent() {
+    void shouldHandleLeaveEvent() {
         //given
         EventListener listener = new EventListener();
 
@@ -37,12 +37,12 @@ public class AbstractManagerEventListenerTest {
         public boolean leaveEventHandled;
 
         @Override
-        protected void handleEvent(JoinEvent event) {
+        public void handleEvent(JoinEvent event) {
             this.joinEventHandled = true;
         }
 
         @Override
-        protected void handleEvent(LeaveEvent event) {
+        public void handleEvent(LeaveEvent event) {
             this.leaveEventHandled = true;
         }
     }

@@ -25,8 +25,7 @@ package org.asteriskjava.manager.event;
  * @author srt
  * @version $Id$
  */
-public class RegistryEvent extends ManagerEvent
-{
+public class RegistryEvent extends ManagerEvent {
     /**
      * Serializable version identifier.
      */
@@ -46,12 +45,12 @@ public class RegistryEvent extends ManagerEvent
     private String username;
     private String status;
     private String cause;
+    private String trunkname;
 
     /**
      * @param source
      */
-    public RegistryEvent(Object source)
-    {
+    public RegistryEvent(Object source) {
         super(source);
     }
 
@@ -62,8 +61,7 @@ public class RegistryEvent extends ManagerEvent
      * @return the type of channel that is registered.
      * @since 1.0.0
      */
-    public String getChannelType()
-    {
+    public String getChannelType() {
         return channelType;
     }
 
@@ -73,8 +71,7 @@ public class RegistryEvent extends ManagerEvent
      * @param channelType the type of channel that is registered.
      * @since 1.0.0
      */
-    public void setChannelType(String channelType)
-    {
+    public void setChannelType(String channelType) {
         this.channelType = channelType;
     }
 
@@ -86,8 +83,8 @@ public class RegistryEvent extends ManagerEvent
      * @since 0.3
      * @deprecated
      */
-    @Deprecated public String getChannelDriver()
-    {
+    @Deprecated
+    public String getChannelDriver() {
         return channelType;
     }
 
@@ -98,8 +95,8 @@ public class RegistryEvent extends ManagerEvent
      * @since 0.3
      * @deprecated
      */
-    @Deprecated public void setChannelDriver(String channelDriver)
-    {
+    @Deprecated
+    public void setChannelDriver(String channelDriver) {
         this.channelType = channelDriver;
     }
 
@@ -110,8 +107,8 @@ public class RegistryEvent extends ManagerEvent
      * @see #getChannelType()
      * @deprecated
      */
-    @Deprecated public String getChannel()
-    {
+    @Deprecated
+    public String getChannel() {
         return channelType;
     }
 
@@ -121,8 +118,8 @@ public class RegistryEvent extends ManagerEvent
      * @see #setChannelType(String)
      * @deprecated
      */
-    @Deprecated public void setChannel(String channel)
-    {
+    @Deprecated
+    public void setChannel(String channel) {
         this.channelType = channel;
     }
 
@@ -133,8 +130,7 @@ public class RegistryEvent extends ManagerEvent
      *
      * @return the domain or host name of the SIP or IAX2 server.
      */
-    public String getDomain()
-    {
+    public String getDomain() {
         return domain;
     }
 
@@ -143,8 +139,7 @@ public class RegistryEvent extends ManagerEvent
      *
      * @param domain the domain or host name of the SIP or IAX2 server.
      */
-    public void setDomain(String domain)
-    {
+    public void setDomain(String domain) {
         this.domain = domain;
     }
 
@@ -155,8 +150,7 @@ public class RegistryEvent extends ManagerEvent
      *
      * @return the username used for registration.
      */
-    public String getUsername()
-    {
+    public String getUsername() {
         return username;
     }
 
@@ -165,8 +159,7 @@ public class RegistryEvent extends ManagerEvent
      *
      * @param username the username used for registration.
      */
-    public void setUsername(String username)
-    {
+    public void setUsername(String username) {
         this.username = username;
     }
 
@@ -175,10 +168,10 @@ public class RegistryEvent extends ManagerEvent
      *
      * @see #setUsername(String)
      * @deprecated Please do not use this method it is a workaround for Asterisk
-     *             1.0.x servers. See Asterisk bug 4916.
+     * 1.0.x servers. See Asterisk bug 4916.
      */
-    @Deprecated public void setUser(String username)
-    {
+    @Deprecated
+    public void setUser(String username) {
         this.username = username;
     }
 
@@ -204,8 +197,7 @@ public class RegistryEvent extends ManagerEvent
      *
      * @return the registration state.
      */
-    public String getStatus()
-    {
+    public String getStatus() {
         return status;
     }
 
@@ -214,8 +206,7 @@ public class RegistryEvent extends ManagerEvent
      *
      * @param status the registration state.
      */
-    public void setStatus(String status)
-    {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -225,8 +216,7 @@ public class RegistryEvent extends ManagerEvent
      * @return the cause of a rejected registration or <code>null</code> if the cause is unknown.
      * @since 0.2
      */
-    public String getCause()
-    {
+    public String getCause() {
         return cause;
     }
 
@@ -236,9 +226,15 @@ public class RegistryEvent extends ManagerEvent
      * @param cause the cause of a rejected registration.
      * @since 0.2
      */
-    public void setCause(String cause)
-    {
+    public void setCause(String cause) {
         this.cause = cause;
     }
 
+    public String getTrunkname() {
+        return trunkname;
+    }
+
+    public void setTrunkname(String trunkname) {
+        this.trunkname = trunkname;
+    }
 }

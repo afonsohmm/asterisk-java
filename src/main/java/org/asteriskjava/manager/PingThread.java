@@ -16,28 +16,27 @@
  */
 package org.asteriskjava.manager;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
+import org.asteriskjava.lock.LockableSet;
+import org.asteriskjava.lock.Locker.LockCloser;
 import org.asteriskjava.manager.action.PingAction;
 import org.asteriskjava.manager.response.ManagerResponse;
 import org.asteriskjava.util.Log;
 import org.asteriskjava.util.LogFactory;
 
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
- * A Thread that pings the Asterisk server at a given interval.
- * You can use this to prevent the connection being shut down when there is no
- * traffic.
+ * A Thread that pings the Asterisk server at a given interval. You can use this
+ * to prevent the connection being shut down when there is no traffic.
  * <p>
  * Since 1.0.0 PingThread supports mutliple connections so do don't have to
- * start multiple threads to keep several connections alive. 
+ * start multiple threads to keep several connections alive.
  *
  * @author srt
  * @version $Id$
  */
-public class PingThread extends Thread
-{
+public class PingThread extends Thread {
     private static final long DEFAULT_INTERVAL = 20 * 1000L;
     private static final long DEFAULT_TIMEOUT = 0L;
     private static final AtomicLong idCounter = new AtomicLong(0);
@@ -50,18 +49,17 @@ public class PingThread extends Thread
     private long interval = DEFAULT_INTERVAL;
     private long timeout = DEFAULT_TIMEOUT;
     private volatile boolean die;
-    private final Set<ManagerConnection> connections;
+    private final LockableSet<ManagerConnection> connections;
 
     /**
-     * Creates a new PingThread. Use {@link #addConnection(ManagerConnection)} to add connections
-     * that will be pinged.
+     * Creates a new PingThread. Use {@link #addConnection(ManagerConnection)}
+     * to add connections that will be pinged.
      *
      * @since 1.0.0
      */
-    public PingThread()
-    {
+    public PingThread() {
         super();
-        this.connections = new HashSet<>();
+        this.connections = new LockableSet<>(new HashSet<>());
         this.die = false;
         long id = idCounter.getAndIncrement();
         setName("Asterisk-Java Ping-" + id);
@@ -73,38 +71,32 @@ public class PingThread extends Thread
      *
      * @param connection ManagerConnection that is pinged
      */
-    public PingThread(ManagerConnection connection)
-    {
+    public PingThread(ManagerConnection connection) {
         this();
         this.connections.add(connection);
     }
 
     /**
-     * Adjusts how often a PingAction is sent.
-     * <br>
+     * Adjusts how often a PingAction is sent. <br>
      * Default is 20000ms, i.e. 20 seconds.
      *
      * @param interval the interval in milliseconds
      */
-    public void setInterval(long interval)
-    {
+    public void setInterval(long interval) {
         this.interval = interval;
     }
 
     /**
      * Sets the timeout to wait for the ManagerResponse before throwing an
-     * excpetion.
-     * <br>
+     * excpetion. <br>
      * If set to 0 the response will be ignored an no exception will be thrown
-     * at all.
-     * <br>
+     * at all. <br>
      * Default is 0.
      *
      * @param timeout the timeout in milliseconds or 0 to indicate no timeout.
      * @since 0.3
      */
-    public void setTimeout(long timeout)
-    {
+    public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
@@ -114,10 +106,8 @@ public class PingThread extends Thread
      * @param connection the connection to ping.
      * @since 1.0.0
      */
-    public void addConnection(ManagerConnection connection)
-    {
-        synchronized (connections)
-        {
+    public void addConnection(ManagerConnection connection) {
+        try (LockCloser closer = connections.withLock()) {
             connections.add(connection);
         }
     }
@@ -128,10 +118,8 @@ public class PingThread extends Thread
      * @param connection the connection that will no longer be pinged.
      * @since 1.0.0
      */
-    public void removeConnection(ManagerConnection connection)
-    {
-        synchronized (connections)
-        {
+    public void removeConnection(ManagerConnection connection) {
+        try (LockCloser closer = connections.withLock()) {
             connections.remove(connection);
         }
     }
@@ -139,39 +127,30 @@ public class PingThread extends Thread
     /**
      * Terminates this PingThread.
      */
-    public void die()
-    {
+    public void die() {
         this.die = true;
         interrupt();
     }
 
     @Override
-    public void run()
-    {
-        while (!die)
-        {
-            try
-            {
+    public void run() {
+        while (!die) {
+            try {
                 sleep(interval);
-            }
-            catch (InterruptedException e) // NOPMD
+            } catch (InterruptedException e) // NOPMD
             {
                 Thread.currentThread().interrupt();
             }
 
             // exit if die is set
-            if (die)
-            {
+            if (die) {
                 break;
             }
 
-            synchronized (connections)
-            {
-                for (ManagerConnection c : connections)
-                {
+            try (LockCloser closer = connections.withLock()) {
+                for (ManagerConnection c : connections) {
                     // skip if not connected
-                    if (c.getState() != ManagerConnectionState.CONNECTED)
-                    {
+                    if (c.getState() != ManagerConnectionState.CONNECTED) {
                         continue;
                     }
 
@@ -186,24 +165,17 @@ public class PingThread extends Thread
      *
      * @param c the connection to ping.
      */
-    protected void ping(ManagerConnection c)
-    {
-        try
-        {
-            if (timeout <= 0)
-            {
+    protected void ping(ManagerConnection c) {
+        try {
+            if (timeout <= 0) {
                 c.sendAction(new PingAction(), null);
-            }
-            else
-            {
+            } else {
                 final ManagerResponse response;
 
                 response = c.sendAction(new PingAction(), timeout);
                 logger.debug("Ping response '" + response + "' for " + c.toString());
             }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             logger.warn("Exception on sending Ping to " + c.toString(), e);
         }
     }

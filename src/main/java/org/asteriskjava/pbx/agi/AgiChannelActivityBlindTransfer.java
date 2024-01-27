@@ -1,52 +1,55 @@
 package org.asteriskjava.pbx.agi;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.asteriskjava.fastagi.AgiChannel;
 import org.asteriskjava.fastagi.AgiException;
 import org.asteriskjava.pbx.AgiChannelActivityAction;
 import org.asteriskjava.pbx.Channel;
 
-public class AgiChannelActivityBlindTransfer implements AgiChannelActivityAction
-{
+import java.util.concurrent.CountDownLatch;
+
+public class AgiChannelActivityBlindTransfer implements AgiChannelActivityAction {
 
     CountDownLatch latch = new CountDownLatch(1);
     private String target;
     private String sipHeader;
     int timeout = 30;
     private String callerId;
+    private String dialOptions;
+    private BlindTransferResultListener listener;
 
-    public AgiChannelActivityBlindTransfer(String fullyQualifiedName, String sipHeader, String callerId)
-    {
+    public AgiChannelActivityBlindTransfer(String fullyQualifiedName, String sipHeader, String callerId, String dialOptions,
+                                           BlindTransferResultListener listener) {
         this.target = fullyQualifiedName;
         this.sipHeader = sipHeader;
         this.callerId = callerId;
-        if (sipHeader == null)
-        {
+        this.dialOptions = dialOptions;
+        if (sipHeader == null) {
             this.sipHeader = "";
         }
+        this.listener = listener;
     }
 
     @Override
-    public void execute(AgiChannel channel, Channel ichannel) throws AgiException, InterruptedException
-    {
+    public void execute(AgiChannel channel, Channel ichannel) throws AgiException, InterruptedException {
 
         channel.setVariable("__SIPADDHEADER", sipHeader);
         channel.setCallerId(callerId);
         ichannel.setCurrentActivityAction(new AgiChannelActivityHold());
-        channel.dial(target, timeout, "");
-
+        channel.dial(target, timeout, dialOptions);
+        String status = channel.getVariable("DIALSTATUS");
+        boolean success = "ANSWER".equalsIgnoreCase(status);
+        if (listener != null) {
+            listener.result(status, success);
+        }
     }
 
     @Override
-    public boolean isDisconnect()
-    {
+    public boolean isDisconnect(ActivityAgi activityAgi) {
         return false;
     }
 
     @Override
-    public void cancel()
-    {
+    public void cancel() {
         latch.countDown();
 
     }
